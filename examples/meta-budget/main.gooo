@@ -1,0 +1,6 @@
+activity SelectNextMetaOperation {
+  source: meta_budget
+  ir: meta_budget.v1
+  artifact: meta_budget.proposal
+  evaluator: meta_budget.evaluator
+}

@@ -1,0 +1,13 @@
+{
+  "name": "malformed",
+  "expected_status": "REFUTED",
+  "request": {
+    "operation": {},
+    "budget": {},
+    "baseline": {},
+    "candidate": {},
+    "cache_hit": false,
+    "cached_identity_digest": "",
+    "meta_metrics": []
+  }
+}
