@@ -46,7 +46,10 @@ func evaluateCommand(args []string) error {
 		return errors.New("evaluate requires --input and --output")
 	}
 	var request budget.Request
-	if err := budget.ReadJSON(*input, &request); err != nil {
+	var envelope budget.ConformanceCase
+	if err := budget.ReadJSON(*input, &envelope); err == nil && envelope.Name != "" {
+		request = envelope.Request
+	} else if err := budget.ReadJSON(*input, &request); err != nil {
 		return err
 	}
 	return budget.WriteJSON(*output, budget.Evaluate(request))
