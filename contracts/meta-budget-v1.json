@@ -1,0 +1,36 @@
+{
+  "schema": "gooo/meta-budget/contract/v1",
+  "semantic_resolution": "full",
+  "proof_denominator": 6,
+  "proof_classes": [
+    "FOUNDATION",
+    "COHERENCE",
+    "REGRESSION",
+    "DRIVER",
+    "OUTCOME",
+    "GUARDRAIL"
+  ],
+  "physical_metric_denominator": 1,
+  "required_unknown_fields": [
+    "stage",
+    "step",
+    "reason",
+    "unknown_class",
+    "next_operation",
+    "blocked_by"
+  ],
+  "required_metric_bindings": [
+    "meta_budget.proof.foundation",
+    "meta_budget.proof.coherence",
+    "meta_budget.proof.regression",
+    "meta_budget.proof.driver",
+    "meta_budget.proof.outcome",
+    "meta_budget.proof.guardrail"
+  ],
+  "allowed_alternative_rules": {
+    "semantic_resolution_must_equal_requested": true,
+    "proof_denominator_must_equal_requested": true,
+    "privilege_level": "read-only",
+    "fixed_point_allowed": false
+  }
+}

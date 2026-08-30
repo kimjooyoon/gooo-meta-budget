@@ -1,0 +1,23 @@
+{
+  "name": "budget-exceeded",
+  "expected_status": "UNKNOWN",
+  "request": {
+    "operation": {"id":"select-next-meta-operation","kind":"STANDARD","semantic_resolution":"full","proof_denominator":6,"privilege_level":"read-only","operations":["reuse-verified-evidence","defer-conformance-replay"],"allowed":true},
+    "budget": {"build_wall_ms":90,"test_wall_ms":160,"conformance_wall_ms":260,"peak_rss_kib":4600,"artifact_bytes":1100},
+    "baseline": {},
+    "candidate": {
+      "before": {"variant":"candidate","identity":{"workload_id":"meta-budget-sample","input_digest":"sha256:input","tool_digest":"sha256:tool","contract_digest":"sha256:contract","identity_digest":"sha256:356af4ca7a7c5208e60f7ebd1642c66681ada67f1d0c667d132b6516e7c11ecc"},"cost":{}},
+      "after": {"variant":"candidate","identity":{"workload_id":"meta-budget-sample","input_digest":"sha256:input","tool_digest":"sha256:tool","contract_digest":"sha256:contract","identity_digest":"sha256:356af4ca7a7c5208e60f7ebd1642c66681ada67f1d0c667d132b6516e7c11ecc"},"cost":{"build":{"wall_ms":100,"peak_rss_kib":5000},"test":{"wall_ms":200,"peak_rss_kib":5000},"conformance":{"wall_ms":300,"peak_rss_kib":5000},"artifact_bytes":1200,"repository_writes":0}}
+    },
+    "cache_hit": false,
+    "cached_identity_digest": "",
+    "meta_metrics": [
+      {"id":"meta_budget.proof.foundation","classification":"FOUNDATION","numerator":6,"denominator":6,"binding":{"metric_id":"meta_budget.proof.foundation","meta_activity_id":"gooo.meta_budget.foundation","source_id":"source.meta_budget.foundation","ir_id":"ir.meta_budget.foundation.v1","generated_artifact_id":"artifact.meta_budget.foundation.v1","evaluator_id":"evaluator.meta_budget.foundation.v1"}},
+      {"id":"meta_budget.proof.coherence","classification":"COHERENCE","numerator":6,"denominator":6,"binding":{"metric_id":"meta_budget.proof.coherence","meta_activity_id":"gooo.meta_budget.coherence","source_id":"source.meta_budget.coherence","ir_id":"ir.meta_budget.coherence.v1","generated_artifact_id":"artifact.meta_budget.coherence.v1","evaluator_id":"evaluator.meta_budget.coherence.v1"}},
+      {"id":"meta_budget.proof.regression","classification":"REGRESSION","numerator":6,"denominator":6,"binding":{"metric_id":"meta_budget.proof.regression","meta_activity_id":"gooo.meta_budget.regression","source_id":"source.meta_budget.regression","ir_id":"ir.meta_budget.regression.v1","generated_artifact_id":"artifact.meta_budget.regression.v1","evaluator_id":"evaluator.meta_budget.regression.v1"}},
+      {"id":"meta_budget.proof.driver","classification":"DRIVER","numerator":6,"denominator":6,"binding":{"metric_id":"meta_budget.proof.driver","meta_activity_id":"gooo.meta_budget.driver","source_id":"source.meta_budget.driver","ir_id":"ir.meta_budget.driver.v1","generated_artifact_id":"artifact.meta_budget.driver.v1","evaluator_id":"evaluator.meta_budget.driver.v1"}},
+      {"id":"meta_budget.proof.outcome","classification":"OUTCOME","numerator":6,"denominator":6,"binding":{"metric_id":"meta_budget.proof.outcome","meta_activity_id":"gooo.meta_budget.outcome","source_id":"source.meta_budget.outcome","ir_id":"ir.meta_budget.outcome.v1","generated_artifact_id":"artifact.meta_budget.outcome.v1","evaluator_id":"evaluator.meta_budget.outcome.v1"}},
+      {"id":"meta_budget.proof.guardrail","classification":"GUARDRAIL","numerator":6,"denominator":6,"binding":{"metric_id":"meta_budget.proof.guardrail","meta_activity_id":"gooo.meta_budget.guardrail","source_id":"source.meta_budget.guardrail","ir_id":"ir.meta_budget.guardrail.v1","generated_artifact_id":"artifact.meta_budget.guardrail.v1","evaluator_id":"evaluator.meta_budget.guardrail.v1"}}
+    ]
+  }
+}

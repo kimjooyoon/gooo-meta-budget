@@ -1,0 +1,13 @@
+{
+  "name": "fixed-point",
+  "expected_status": "REFUTED",
+  "request": {
+    "operation": {"id":"fixed-point","kind":"FIXED_POINT","semantic_resolution":"full","proof_denominator":6,"privilege_level":"read-only","operations":["repeat-identical-operation"],"allowed":true},
+    "budget": {"build_wall_ms":90,"test_wall_ms":160,"conformance_wall_ms":260,"peak_rss_kib":4600,"artifact_bytes":1100},
+    "baseline": {},
+    "candidate": {},
+    "cache_hit": false,
+    "cached_identity_digest": "",
+    "meta_metrics": []
+  }
+}

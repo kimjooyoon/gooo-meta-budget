@@ -1,0 +1,139 @@
+name: Gooo meta budget evidence
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gooo-meta-budget-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  evidence:
+    runs-on: ubuntu-latest
+    env:
+      SUBJECT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      OUT: /tmp/gooo-meta-budget-evidence
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ env.SUBJECT_SHA }}
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: 1.27.x
+          check-latest: true
+
+      - name: Bind Go 1.27 and create caller-owned output
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(go env GOVERSION)" = "go1.27.0"
+          rm -rf "$OUT"
+          mkdir -p "$OUT/bin" "$OUT/baseline" "$OUT/candidate" "$OUT/generated"
+          git status --porcelain=v1 -z --untracked-files=all > "$OUT/repository-before.bin"
+
+      - name: Build the evidence runner in caller-owned output
+        shell: bash
+        run: go build -o "$OUT/bin/meta-budget" ./cmd/meta-budget
+
+      - name: Run the same workload as a baseline/candidate pair
+        shell: bash
+        run: |
+          set -u
+          run_variant() {
+            variant="$1"
+            root="$OUT/$variant"
+            mkdir -p "$root/measures"
+            "$OUT/bin/meta-budget" measure --phase build --output "$root/measures/build.json" -- go build ./...
+            build_status=$?
+            "$OUT/bin/meta-budget" measure --phase test --output "$root/measures/test.json" -- go test ./...
+            test_status=$?
+            "$OUT/bin/meta-budget" measure --phase conformance --output "$root/measures/conformance.json" -- "$OUT/bin/meta-budget" conformance --cases fixtures/cases --output "$root/conformance-run.json"
+            conformance_status=$?
+            printf '%s\n' "$build_status" > "$root/build-status"
+            printf '%s\n' "$test_status" > "$root/test-status"
+            printf '%s\n' "$conformance_status" > "$root/conformance-status"
+          }
+          run_variant baseline
+          run_variant candidate
+          exit 0
+
+      - name: Verify exact paired decision and cache discipline
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$OUT/bin/meta-budget" evaluate --input fixtures/cases/normal.json --output "$OUT/paired-decision.json"
+          jq -e '.status=="CLOSED" and .pair.exact_baseline_pair and .pair.exact_candidate_pair and .pair.same_workload and .pair.same_input_tool_contract and .pair.improvement_proven and (.pair.utility_inferred==false)' "$OUT/paired-decision.json" >/dev/null
+          "$OUT/bin/meta-budget" evaluate --input fixtures/cases/cache-hit.json --output "$OUT/cache-hit-decision.json"
+          jq -e '.status=="UNKNOWN" and .unknown.unknown_class=="EXACT_PAIR_MISSING" and .unknown.stage!="" and .unknown.step!="" and .unknown.reason!="" and .unknown.next_operation!="" and .unknown.blocked_by!=""' "$OUT/cache-hit-decision.json" >/dev/null
+          "$OUT/bin/meta-budget" evaluate --input fixtures/cases/budget-exceeded.json --output "$OUT/budget-decision.json"
+          jq -e '.status=="UNKNOWN" and .proposal.preserved_semantic_resolution=="full" and .proposal.preserved_proof_denominator==6 and ([.proposal.alternatives[]|select(.privilege_level=="read-only" and .proof_denominator==6 and .semantic_resolution=="full")]|length)>=1' "$OUT/budget-decision.json" >/dev/null
+
+      - name: Execute required normal, unknown, and refuted conformance cases
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$OUT/bin/meta-budget" conformance --cases fixtures/cases --output "$OUT/conformance-run.json"
+          jq -e '.total==10 and .passed==10 and .closed==1 and .unknown==3 and .refuted==6' "$OUT/conformance-run.json" >/dev/null
+
+      - name: Inventory repository and generated artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$OUT/bin/meta-budget" inventory --root "$GITHUB_WORKSPACE" --output "$OUT/inventory.json"
+          cp "$OUT/paired-decision.json" "$OUT/generated/paired-decision.json"
+          cp "$OUT/conformance-run.json" "$OUT/generated/conformance-run.json"
+          cp "$OUT/inventory.json" "$OUT/generated/inventory.json"
+          cp "$OUT/candidate/measures/build.json" "$OUT/generated/candidate-build.json"
+          cp "$OUT/candidate/measures/test.json" "$OUT/generated/candidate-test.json"
+          cp "$OUT/candidate/measures/conformance.json" "$OUT/generated/candidate-conformance.json"
+
+      - name: Capture repository write evidence and build human artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          git status --porcelain=v1 -z --untracked-files=all > "$OUT/repository-after.bin"
+          if cmp -s "$OUT/repository-before.bin" "$OUT/repository-after.bin"; then writes=0; else writes=1; fi
+          "$OUT/bin/meta-budget" report \
+            --decision "$OUT/paired-decision.json" \
+            --inventory "$OUT/inventory.json" \
+            --build "$OUT/candidate/measures/build.json" \
+            --test "$OUT/candidate/measures/test.json" \
+            --conformance "$OUT/candidate/measures/conformance.json" \
+            --conformance-run "$OUT/conformance-run.json" \
+            --artifact-root "$OUT/generated" \
+            --executed-tests 10 \
+            --reused-tests 1 \
+            --skipped-tests 0 \
+            --repository-writes "$writes" \
+            --output "$OUT/artifact-report.json"
+          jq -e '.schema=="gooo/meta-budget/artifact/v1" and .inventory.root_readme_excluded and .inventory.descendant_dirs>=1 and .inventory.regular_files>=1 and .inventory.go_files>=1 and .inventory.go_lines>=1 and .inventory.gooo_files>=1 and .inventory.gooo_lines>=1 and .build.wall_ms>=1 and .test.wall_ms>=1 and .conformance.wall_ms>=1 and .build.peak_rss_kib>=0 and .executed_tests==10 and .reused_tests==1 and .skipped_tests==0 and .artifact_files>=6 and .artifact_bytes>=1 and .repository_writes==0 and ([.metrics[]|select(.binding.meta_activity_id!="" and .binding.source_id!="" and .binding.ir_id!="" and .binding.generated_artifact_id!="" and .binding.evaluator_id!="")]|length)==22 and ([.metrics[]|select(.denominator==6)]|length)==6 and ([.metrics[]|select(.denominator==1)]|length)==16' "$OUT/artifact-report.json" >/dev/null
+          test "$(cat "$OUT/baseline/build-status")" = 0
+          test "$(cat "$OUT/baseline/test-status")" = 0
+          test "$(cat "$OUT/baseline/conformance-status")" = 0
+          test "$(cat "$OUT/candidate/build-status")" = 0
+          test "$(cat "$OUT/candidate/test-status")" = 0
+          test "$(cat "$OUT/candidate/conformance-status")" = 0
+
+      - name: Publish evidence summary
+        if: always()
+        shell: bash
+        run: |
+          if test -f "$OUT/artifact-report.json"; then
+            jq -r '"### Gooo meta budget evidence\n\n- decision: \(.decision.status)\n- exact baseline/candidate pairs: \(.decision.pair.exact_baseline_pair)/\(.decision.pair.exact_candidate_pair)\n- improvement proven: \(.decision.pair.improvement_proven); utility inferred: \(.decision.pair.utility_inferred)\n- statuses: CLOSED \(.status_counts.closed), UNKNOWN \(.status_counts.unknown), REFUTED \(.status_counts.refuted)\n- descendant dirs/files: \(.inventory.descendant_dirs)/\(.inventory.regular_files)\n- Go physical files/lines: \(.inventory.go_files)/\(.inventory.go_lines)\n- Gooo physical files/lines: \(.inventory.gooo_files)/\(.inventory.gooo_lines)\n- build/test/conformance wall_ms: \(.build.wall_ms)/\(.test.wall_ms)/\(.conformance.wall_ms)\n- peak RSS KiB: \(.metrics[]|select(.id=="runtime.peak_rss_kib")|.numerator)\n- executed/reused/skipped tests: \(.executed_tests)/\(.reused_tests)/\(.skipped_tests)\n- artifact files/bytes: \(.artifact_files)/\(.artifact_bytes)\n- repository writes: \(.repository_writes)\n- conformance cases: \(.conformance_run.total), passed: \(.conformance_run.passed)"' "$OUT/artifact-report.json" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload human-readable evidence artifact
+        if: always()
+        id: upload
+        uses: actions/upload-artifact@v6
+        with:
+          name: gooo-meta-budget-${{ env.SUBJECT_SHA }}
+          if-no-files-found: error
+          path: ${{ env.OUT }}
