@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 type Status string
@@ -166,6 +167,7 @@ type Decision struct {
 	NextOperation   string        `json:"next_operation"`
 	RequestedPlan   ExecutionPlan `json:"requested_plan"`
 	BudgetExceeded  []string      `json:"budget_exceeded"`
+	MetaMetrics     []Metric      `json:"meta_metrics"`
 	Proposal        *Proposal     `json:"proposal,omitempty"`
 	Unknown         *UnknownRecord `json:"unknown,omitempty"`
 	Refutation      *Refutation   `json:"refutation,omitempty"`
@@ -372,6 +374,9 @@ func (m Metric) Validate(expectedDenominator int64) error {
 	}
 	if m.Binding.MetricID != m.ID || m.Binding.MetaActivityID == "" || m.Binding.SourceID == "" || m.Binding.IRID == "" || m.Binding.GeneratedArtifact == "" || m.Binding.EvaluatorID == "" {
 		return fmt.Errorf("metric %s is not bound one-to-one to activity/source/IR/artifact/evaluator", m.ID)
+	}
+	if strings.HasPrefix(m.ID, "meta_budget.proof.") && m.Numerator > m.Denominator {
+		return fmt.Errorf("proof metric %s exceeds its fixed denominator", m.ID)
 	}
 	return nil
 }

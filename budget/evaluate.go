@@ -17,6 +17,7 @@ func Evaluate(request Request) Decision {
 	if err := request.validateStatic(); err != nil {
 		return refuted(decision, "VALIDATION", "VALIDATE_REQUEST", "MALFORMED_REQUEST", err.Error())
 	}
+	decision.MetaMetrics = append([]Metric{}, request.MetaMetrics...)
 
 	if request.CacheHit {
 		cachedDigest, err := request.Candidate.Before.Identity.Digest()

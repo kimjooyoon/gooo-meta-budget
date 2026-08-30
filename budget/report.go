@@ -28,7 +28,7 @@ func BuildReport(decision Decision, inventory Inventory, build, test, conformanc
 			"proof":    int64(decision.RequestedPlan.ProofDenominator),
 			"physical": 1,
 		},
-		Metrics: append([]Metric{}, inventory.Metrics...),
+		Metrics: append(append([]Metric{}, decision.MetaMetrics...), inventory.Metrics...),
 	}
 	report.StatusCounts = report.StatusCounts.Add(decision.Status)
 	report.StatusCounts = report.StatusCounts.Add(conformanceRunStatus(conformanceRun))
@@ -45,7 +45,7 @@ func BuildReport(decision Decision, inventory Inventory, build, test, conformanc
 		runtimeMetric("repository.writes", repositoryWrites, Guardrail),
 	)
 	for _, metric := range report.Metrics {
-		if err := metric.Validate(1); err != nil {
+		if err := metric.Validate(0); err != nil {
 			return ArtifactReport{}, err
 		}
 	}
